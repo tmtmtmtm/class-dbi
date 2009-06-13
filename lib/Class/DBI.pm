@@ -693,16 +693,6 @@ sub construct {
 	return $self;
 }
 
-sub move {
-	my ($class, $old_obj, @data) = @_;
-	$class->_carp("move() is deprecated. If you really need it, "
-			. "you should tell me quickly so I can abandon my plan to remove it.");
-	return $old_obj->_croak("Can't move to an unrelated class")
-		unless $class->isa(ref $old_obj)
-		or $old_obj->isa($class);
-	return $class->insert($old_obj->_data_hash(@data));
-}
-
 sub delete {
 	my $self = shift;
 	return $self->_search_delete(@_) if not ref $self;
@@ -1697,7 +1687,7 @@ and feed that data to construct():
 The construct() method creates a new empty object, loads in the column
 values, and then invokes the C<select> trigger.
 
-=head1 COPY AND MOVE
+=head1 COPY 
 
 =head2 copy
 
@@ -1724,18 +1714,6 @@ fail if any primary key columns are not defined.
     Title => "Bladerunner: Director's Cut",
     Rating => 'Unrated',
   });
-
-=head2 move
-
-  my $new_obj = Sub::Class->move($old_obj);
-  my $new_obj = Sub::Class->move($old_obj, $new_id);
-  my $new_obj = Sub::Class->move($old_obj, \%changes);
-
-For transferring objects from one class to another. Similar to copy(), an
-instance of Sub::Class is inserted using the data in $old_obj (Sub::Class
-is a subclass of $old_obj's subclass). Like copy(), you can supply
-$new_id as the primary key of $new_obj (otherwise the usual sequence or
-autoincrement is used), or a hashref of multiple new values.
 
 =head1 TRIGGERS
 

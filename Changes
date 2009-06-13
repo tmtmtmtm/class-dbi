@@ -1,5 +1,6 @@
 Current Baseline
-  - remove deprecated accessor_name and mutator_name methods (and t/27-mutator-old.t)
+  - remove deprecated move(), accessor_name(), and mutator_name() 
+    methods (and t/27-mutator-old.t)
 
 3.0.17 Oct 4, 2007
   - Fix t/11 to cope with Class::Trigger no longer supporting multiple
