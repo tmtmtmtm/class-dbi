@@ -4,7 +4,7 @@ $| = 1;
 
 BEGIN {
 	eval "use DBD::SQLite";
-	plan $@ ? (skip_all => 'needs DBD::SQLite for testing') : (tests => 91);
+	plan $@ ? (skip_all => 'needs DBD::SQLite for testing') : (tests => 88);
 }
 
 INIT {
@@ -158,17 +158,6 @@ eval {
 	ok(Film->retrieve('Ishtar')->delete,
 		"Ishtar doesn't deserve an entry any more");
 	ok(!Film->retrieve('Ishtar'), 'Ishtar no longer there');
-	{
-		my $deprecated = 0;
-		local $SIG{__WARN__} = sub { $deprecated++ if $_[0] =~ /deprecated/ };
-		ok(
-			Film->delete(Director => 'Elaine May'),
-			"In fact, delete all films by Elaine May"
-		);
-		is(Film->search(Director => 'Elaine May')->count,
-			0, "0 Films by Elaine May");
-		is $deprecated, 1, "Got a deprecated warning";
-	}
 };
 is $@, '', "No problems with deletes";
 

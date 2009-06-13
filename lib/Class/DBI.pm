@@ -695,7 +695,6 @@ sub construct {
 
 sub delete {
 	my $self = shift;
-	return $self->_search_delete(@_) if not ref $self;
 	$self->remove_from_object_index;
 	$self->call_trigger('before_delete');
 
@@ -710,16 +709,6 @@ sub delete {
 	$self->call_trigger('after_delete');
 	undef %$self;
 	bless $self, 'Class::DBI::Object::Has::Been::Deleted';
-	return 1;
-}
-
-sub _search_delete {
-	my ($class, @args) = @_;
-	$class->_carp(
-		"Delete as class method is deprecated. Use search and delete_all instead."
-	);
-	my $it = $class->search_like(@args);
-	while (my $obj = $it->next) { $obj->delete }
 	return 1;
 }
 
