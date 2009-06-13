@@ -48,7 +48,6 @@ __PACKAGE__->mk_classdata('__hasa_rels' => {});
 #----------------------------------------------------------------------
 # Our Class Data
 #----------------------------------------------------------------------
-__PACKAGE__->mk_classdata('__AutoCommit');
 __PACKAGE__->mk_classdata('__hasa_list');
 __PACKAGE__->mk_classdata('_table');
 __PACKAGE__->mk_classdata('_table_alias');
@@ -352,26 +351,7 @@ sub mutator_name_for {
 	return $column->mutator;
 }
 
-sub autoupdate {
-	my $proto = shift;
-	ref $proto ? $proto->_obj_autoupdate(@_) : $proto->_class_autoupdate(@_);
-}
-
-sub _obj_autoupdate {
-	my ($self, $set) = @_;
-	my $class = ref $self;
-	$self->{__AutoCommit} = $set if defined $set;
-	defined $self->{__AutoCommit}
-		? $self->{__AutoCommit}
-		: $class->_class_autoupdate;
-}
-
-sub _class_autoupdate {
-	my ($class, $set) = @_;
-	$class->__AutoCommit($set) if defined $set;
-	return $class->__AutoCommit;
-}
-
+# TODO: make this a plugin
 sub make_read_only {
 	my $proto = shift;
 	$proto->add_trigger("before_$_" => sub { _croak "$proto is read only" })
@@ -445,10 +425,6 @@ sub _attribute_exists {
 	my ($self, $attribute) = @_;
 	exists $self->{$attribute};
 }
-
-#----------------------------------------------------------------------
-# Live Object Index (using weak refs if available)
-#----------------------------------------------------------------------
 
 sub _init {
 	my $class = shift;
@@ -666,6 +642,8 @@ sub _column_placeholder {
 	return $self->find_column($column)->placeholder;
 }
 
+sub autoupdate { shift->_croak("No such thing as autoupdate any more") }
+
 sub update {
 	my $self  = shift;
 	my $class = ref($self)
@@ -721,8 +699,6 @@ sub DESTROY {
 
 sub discard_changes {
 	my $self = shift;
-	return $self->_croak("Can't discard_changes while autoupdate is on")
-		if $self->autoupdate;
 	$self->_attribute_delete($self->is_changed);
 	delete $self->{__Changed};
 	return 1;
@@ -761,8 +737,7 @@ sub _flesh {
 }
 
 # We also override set() from Class::Accessor so we can keep track of
-# changes, and either write to the database now (if autoupdate is on),
-# or when update() is called.
+# changes, and write to the database when update() is called.
 sub set {
 	my $self          = shift;
 	my $column_values = {@_};
@@ -774,8 +749,6 @@ sub set {
 		my $col = $self->find_column($column) or die "No such column: $column\n";
 		$self->_attribute_set($col => $value);
 
-		# $self->SUPER::set($column, $value);
-
 		eval { $self->call_trigger("after_set_$column") };    # eg inflate
 		if ($@) {
 			$self->_attribute_delete($column);
@@ -783,8 +756,6 @@ sub set {
 		}
 	}
 
-	$self->update if $self->autoupdate;
-	return 1;
 }
 
 sub is_changed {
@@ -1914,74 +1885,13 @@ the name of the method to change the value:
 If you override the mutator name, then the accessor method will be
 enforced as read-only, and the mutator as write-only.
 
-=head2 update vs auto update
-
-There are two modes for the accessors to work in: manual update and
-autoupdate. When in autoupdate mode, every time one calls an accessor
-to make a change an UPDATE will immediately be sent to the database.
-Otherwise, if autoupdate is off, no changes will be written until update()
-is explicitly called.
-
-This is an example of manual updating:
-
-  # The calls to NumExplodingSheep() and Rating() will only make the
-  # changes in memory, not in the database.  Once update() is called
-  # it writes to the database in one swell foop.
-  $gone->NumExplodingSheep(5);
-  $gone->Rating('NC-17');
-  $gone->update;
-
-And of autoupdating:
-
-  # Turn autoupdating on for this object.
-  $gone->autoupdate(1);
-
-  # Each accessor call causes the new value to immediately be written.
-  $gone->NumExplodingSheep(5);
-  $gone->Rating('NC-17');
-
-Manual updating is probably more efficient than autoupdating and
-it provides the extra safety of a discard_changes() option to clear out all
-unsaved changes.  Autoupdating can be more convenient for the programmer.
-Autoupdating is I<off> by default.
-
-If changes are neither updated nor rolled back when the object is
-destroyed (falls out of scope or the program ends) then Class::DBI's
-DESTROY method will print a warning about unsaved changes.
-
-=head2 autoupdate
-
-  __PACKAGE__->autoupdate($on_or_off);
-  $update_style = Class->autoupdate;
-
-  $obj->autoupdate($on_or_off);
-  $update_style = $obj->autoupdate;
-
-This is an accessor to the current style of auto-updating.  When called
-with no arguments it returns the current auto-updating state, true for on,
-false for off.  When given an argument it turns auto-updating on and off:
-a true value turns it on, a false one off.
-
-When called as a class method it will control the updating style for
-every instance of the class.  When called on an individual object it
-will control updating for just that object, overriding the choice for
-the class.
-
-  __PACKAGE__->autoupdate(1);     # Autoupdate is now on for the class.
-
-  $obj = Class->retrieve('Aliens Cut My Hair');
-  $obj->autoupdate(0);      # Shut off autoupdating for this object.
-
-The update setting for an object is not stored in the database.
-
 =head2 update
 
   $obj->update;
 
-If L<"autoupdate"> is not enabled then changes you make to your object are
-not reflected in the database until you call update().  It is harmless
-to call update() if there are no changes to be saved.  (If autoupdate
-is on there'll never be anything to save.)
+Changes you make to your object are not reflected in the database
+until you call update().  It is harmless to call update() if there
+are no changes to be saved.  
 
 Note: If you have transactions turned on for your database (but see
 L<"TRANSACTIONS"> below) you will also need to call dbi_commit(), as
@@ -2032,17 +1942,13 @@ method will return 0.
 Removes any changes you've made to this object since the last update.
 Currently this simply discards the column values from the object.
 
-If you're using autoupdate this method will throw an exception.
-
 =head2 is_changed
 
   my $changed = $obj->is_changed;
   my @changed_keys = $obj->is_changed;
 
 Indicates if the given $obj has changes since the last update. Returns
-a list of keys which have changed. (If autoupdate is on, this method
-will return an empty list, unless called inside a before_update or
-after_set_$column trigger)
+a list of keys which have changed. 
 
 =head2 id
 
@@ -2099,8 +2005,7 @@ database.
 
 Updates values in the object via _attribute_store(), but also logs
 the changes so that they are propagated to the database with the next
-update.  (Unlike set(), however, _attribute_set() will not trigger an
-update if autoupdate is turned on.)
+update.  
 
 =item _attribute_delete
 

@@ -4,6 +4,7 @@ Current Baseline
   - remove deprecated methods: move(), accessor_name(), mutator_name(),
     _single_row_select(), _single_value_select() and class method 
     version of delete() 
+  - remove concept of autoupdate() - update() *must* be called to write
 
 3.0.17 Oct 4, 2007
   - Fix t/11 to cope with Class::Trigger no longer supporting multiple
