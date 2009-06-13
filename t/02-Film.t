@@ -4,7 +4,7 @@ $| = 1;
 
 BEGIN {
 	eval "use DBD::SQLite";
-	plan $@ ? (skip_all => 'needs DBD::SQLite for testing') : (tests => 88);
+	plan $@ ? (skip_all => 'needs DBD::SQLite for testing') : (tests => 85);
 }
 
 INIT {
@@ -209,8 +209,6 @@ is($btaste->Director, $orig_director, 'discard_changes()');
 	local $SIG{__WARN__} = sub { push @warnings, @_; };
 	{
 
-		# unhook from live object cache, so next one is not from cache
-		$btaste2->remove_from_object_index;
 		my $btaste3 = Film->retrieve($btaste->id);
 		is $btaste3->NumExplodingSheep, 18, "Class based AutoCommit";
 		$btaste3->autoupdate(0);    # obj a/c should override class a/c
@@ -311,23 +309,3 @@ if (0) {
 	ok !$film, "It destroys itself";
 }
 
-SKIP: {
-	skip "Scalar::Util::weaken not available", 3
-		if !$Class::DBI::Weaken_Is_Available;
-
-	# my bad taste is your bad taste
-	my $btaste  = Film->retrieve('Bad Taste');
-	my $btaste2 = Film->retrieve('Bad Taste');
-	is Scalar::Util::refaddr($btaste), Scalar::Util::refaddr($btaste2),
-		"Retrieving twice gives ref to same object";
-
-	$btaste2->remove_from_object_index;
-	my $btaste3 = Film->retrieve('Bad Taste');
-	isnt Scalar::Util::refaddr($btaste2), Scalar::Util::refaddr($btaste3),
-		"Removing from object_index and retrieving again gives new object";
-
-	$btaste3->clear_object_index;
-	my $btaste4 = Film->retrieve('Bad Taste');
-	isnt Scalar::Util::refaddr($btaste2), Scalar::Util::refaddr($btaste4),
-		"Clearing cache and retrieving again gives new object";
-}

@@ -56,9 +56,6 @@ my $sj = Director->insert(
 	eval { $btaste->Director($btaste) };
 	like $@, qr/is not a Director/, "Can't set film as director";
 	is $btaste->Director->id, $pj->id, "PJ still the director";
-
-	# drop from cache so that next retrieve() is from db
-	$btaste->remove_from_object_index;
 }
 
 {    # Still inflated after update

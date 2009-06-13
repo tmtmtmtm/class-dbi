@@ -135,7 +135,6 @@ eval {
 		my $film = Film->insert({ Title => "Veronique", nonpersistent => 42 });
 		is $film->title,         "Veronique", "Title set OK";
 		is $film->nonpersistent, 42,          "As is non persistent value";
-		$film->remove_from_object_index;
 		ok $film = Film->retrieve('Veronique'), "Re-retrieve film";
 		is $film->title, "Veronique", "Title still OK";
 		is $film->nonpersistent, undef, "Non persistent value gone";

@@ -21,19 +21,6 @@ use List::Util;
 use Clone ();
 use UNIVERSAL::moniker;
 
-use vars qw($Weaken_Is_Available);
-
-BEGIN {
-	$Weaken_Is_Available = 1;
-	eval {
-		require Scalar::Util;
-		import Scalar::Util qw(weaken);
-	};
-	if ($@) {
-		$Weaken_Is_Available = 0;
-	}
-}
-
 use overload
 	'""'     => sub { shift->stringify_self },
 	bool     => sub { not shift->_undefined_primary },
@@ -70,7 +57,6 @@ __PACKAGE__->mk_classdata('__grouper'   => Class::DBI::ColumnGrouper->new());
 __PACKAGE__->mk_classdata('__data_type' => {});
 __PACKAGE__->mk_classdata('__driver');
 __PACKAGE__->mk_classdata('iterator_class' => 'Class::DBI::Iterator');
-__PACKAGE__->mk_classdata('purge_object_index_every' => 1000);
 __PACKAGE__->add_searcher(search => "Class::DBI::Search::Basic",);
 
 __PACKAGE__->add_relationship_type(
@@ -464,57 +450,17 @@ sub _attribute_exists {
 # Live Object Index (using weak refs if available)
 #----------------------------------------------------------------------
 
-my %Live_Objects;
-my $Init_Count = 0;
-
 sub _init {
 	my $class = shift;
 	my $data  = shift || {};
-	my $key   = $class->_live_object_key($data);
-	return $Live_Objects{$key} || $class->_fresh_init($key => $data);
-}
-
-sub _fresh_init {
-	my ($class, $key, $data) = @_;
 	my $obj = bless {}, $class;
 	$obj->_attribute_store(%$data);
-
-	# don't store it unless all keys are present
-	if ($key && $Weaken_Is_Available) {
-		weaken($Live_Objects{$key} = $obj);
-
-		# time to clean up your room?
-		$class->purge_dead_from_object_index
-			if ++$Init_Count % $class->purge_object_index_every == 0;
-	}
 	return $obj;
 }
 
-sub _live_object_key {
-	my ($me, $data) = @_;
-	my $class   = ref($me) || $me;
-	my @primary = $class->primary_columns;
-
-	# no key unless all PK columns are defined
-	return "" unless @primary == grep defined $data->{$_}, @primary;
-
-	# create single unique key for this object
-	return join "\030", $class, map $_ . "\032" . $data->{$_}, sort @primary;
-}
-
-sub purge_dead_from_object_index {
-	delete @Live_Objects{ grep !defined $Live_Objects{$_}, keys %Live_Objects };
-}
-
-sub remove_from_object_index {
-	my $self    = shift;
-	my $obj_key = $self->_live_object_key({ $self->_as_hash });
-	delete $Live_Objects{$obj_key};
-}
-
-sub clear_object_index {
-	%Live_Objects = ();
-}
+# TODO remove these
+sub remove_from_object_index { Carp::carp "Live object index no longer in use" }
+sub clear_object_index { Carp::carp "Live object index no longer in use" }
 
 #----------------------------------------------------------------------
 
@@ -695,7 +641,6 @@ sub construct {
 
 sub delete {
 	my $self = shift;
-	$self->remove_from_object_index;
 	$self->call_trigger('before_delete');
 
 	eval { $self->sql_DeleteMe->execute($self->id) };
@@ -2825,79 +2770,6 @@ on globally) (courtesy of Dominic Mitchell) is:
 
 Now either both will get added, or the entire transaction will be
 rolled back.
-
-=head1 UNIQUENESS OF OBJECTS IN MEMORY
-
-Class::DBI supports uniqueness of objects in memory. In a given perl
-interpreter there will only be one instance of any given object at
-one time. Many variables may reference that object, but there can be
-only one.
-
-Here's an example to illustrate:
-
-  my $artist1 = Music::Artist->insert({ artistid => 7, name => 'Polysics' });
-  my $artist2 = Music::Artist->retrieve(7);
-  my $artist3 = Music::Artist->search( name => 'Polysics' )->first;
-
-Now $artist1, $artist2, and $artist3 all point to the same object. If you
-update a property on one of them, all of them will reflect the update.
-
-This is implemented using a simple object lookup index for all live
-objects in memory. It is not a traditional cache - when your objects
-go out of scope, they will be destroyed normally, and a future retrieve
-will instantiate an entirely new object.
-
-The ability to perform this magic for you replies on your perl having
-access to the Scalar::Util::weaken function. Although this is part of
-the core perl distribution, some vendors do not compile support for it.
-To find out if your perl has support for it, you can run this on the
-command line:
-
-  perl -e 'use Scalar::Util qw(weaken)'
-
-If you get an error message about weak references not being implemented,
-Class::DBI will not maintain this lookup index, but give you a separate
-instances for each retrieve.
-
-A few new tools are offered for adjusting the behavior of the object
-index. These are still somewhat experimental and may change in a
-future release.
-
-=head2 remove_from_object_index
-
-  $artist->remove_from_object_index();
-
-This is an object method for removing a single object from the live
-objects index. You can use this if you want to have multiple distinct
-copies of the same object in memory.
-
-=head2 clear_object_index
-
-  Music::DBI->clear_object_index();
-
-You can call this method on any class or instance of Class::DBI, but
-the effect is universal: it removes all objects from the index.
-
-=head2 purge_object_index_every
-
-  Music::Artist->purge_object_index_every(2000);
-
-Weak references are not removed from the index when an object goes
-out of scope. This means that over time the index will grow in memory.
-This is really only an issue for long-running environments like mod_perl,
-but every so often dead references are cleaned out to prevent this. By
-default, this happens every 1000 object loads, but you can change that
-default for your class by setting the 'purge_object_index_every' value.
-
-(Eventually this may handled in the DESTROY method instead.)
-
-As a final note, keep in mind that you can still have multiple distinct
-copies of an object in memory if you have multiple perl interpreters
-running. CGI, mod_perl, and many other common usage situations run
-multiple interpreters, meaning that each one of them may have an instance
-of an object representing the same data. However, this is no worse
-than it was before, and is entirely normal for database applications in
-multi-process environments.
 
 =head1 SUBCLASSING
 

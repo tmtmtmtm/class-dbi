@@ -1,4 +1,6 @@
 Current Baseline
+  - removed the live object index (Too much complexity for too little
+    gain, and most people disabled it anyway.)
   - remove deprecated methods: move(), accessor_name(), mutator_name(),
     _single_row_select(), _single_value_select() and class method 
     version of delete() 
