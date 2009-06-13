@@ -1118,18 +1118,6 @@ sub _ids_to_objects {
 # SINGLE VALUE SELECTS
 #----------------------------------------------------------------------
 
-sub _single_row_select {
-	my ($self, $sth, @args) = @_;
-	Carp::confess("_single_row_select is deprecated in favour of select_row");
-	return $sth->select_row(@args);
-}
-
-sub _single_value_select {
-	my ($self, $sth, @args) = @_;
-	$self->_carp("_single_value_select is deprecated in favour of select_val");
-	return $sth->select_val(@args);
-}
-
 sub count_all { shift->sql_single("COUNT(*)")->select_val }
 
 sub maximum_value_of {
