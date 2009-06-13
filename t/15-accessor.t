@@ -159,14 +159,13 @@ eval {
 }
 
 {
-	Film->autoupdate(1);
 	my $naked = Film->insert({ title => 'Naked' });
 	my $sandl = Film->insert({ title => 'Secrets and Lies' });
 
 	my $rating = 1;
 	my $update_failure = sub {
 		my $obj = shift;
-		eval { $obj->rating($rating++) };
+		eval { $obj->rating($rating++); $obj->update; };
 		return $@ =~ /read only/;
 	};
 

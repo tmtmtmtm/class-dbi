@@ -755,7 +755,7 @@ sub set {
 			return $self->_croak("after_set_$column trigger error: $@", err => $@);
 		}
 	}
-
+  return 1;
 }
 
 sub is_changed {

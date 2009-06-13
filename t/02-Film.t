@@ -4,7 +4,7 @@ $| = 1;
 
 BEGIN {
 	eval "use DBD::SQLite";
-	plan $@ ? (skip_all => 'needs DBD::SQLite for testing') : (tests => 85);
+	plan $@ ? (skip_all => 'needs DBD::SQLite for testing') : (tests => 81);
 }
 
 INIT {
@@ -201,36 +201,11 @@ is($btaste->Director, 'Lenny Bruce', 'set new Director');
 $btaste->discard_changes;
 is($btaste->Director, $orig_director, 'discard_changes()');
 
-{
-	Film->autoupdate(1);
-	my $btaste2 = Film->retrieve($btaste->id);
-	$btaste->NumExplodingSheep(18);
-	my @warnings;
-	local $SIG{__WARN__} = sub { push @warnings, @_; };
-	{
-
-		my $btaste3 = Film->retrieve($btaste->id);
-		is $btaste3->NumExplodingSheep, 18, "Class based AutoCommit";
-		$btaste3->autoupdate(0);    # obj a/c should override class a/c
-		is @warnings, 0, "No warnings so far";
-		$btaste3->NumExplodingSheep(13);
-	}
-	is @warnings, 1, "DESTROY without update warns";
-	Film->autoupdate(0);
-}
 
 { # update unchanged object
 	my $film = Film->retrieve($btaste->id);
 	my $retval = $film->update;
 	is $retval, -1, "Unchanged object";
-}
-
-{
-	$btaste->autoupdate(1);
-	$btaste->NumExplodingSheep(32);
-	my $btaste2 = Film->retrieve($btaste->id);
-	is $btaste2->NumExplodingSheep, 32, "Object based AutoCommit";
-	$btaste->autoupdate(0);
 }
 
 # Primary key of 0
@@ -245,9 +220,9 @@ is($btaste->Director, $orig_director, 'discard_changes()');
 # Change after_update policy
 {
 	my $bt = Film->retrieve($btaste->id);
-	$bt->autoupdate(1);
 
 	$bt->rating("17");
+  $bt->update;
 	ok !$bt->_attribute_exists('rating'), "changed column needs reloaded";
 	ok $bt->_attribute_exists('title'), "but we still have the title";
 
@@ -259,6 +234,7 @@ is($btaste->Director, $orig_director, 'discard_changes()');
 			@$discard_columns = qw/title/;
 		});
 	$bt->rating("19");
+	$bt->update;
 	ok $bt->_attribute_exists('rating'), "changed column needs reloaded";
 	ok !$bt->_attribute_exists('title'), "but no longer have the title";
 }
