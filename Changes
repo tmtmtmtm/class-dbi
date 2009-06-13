@@ -1,3 +1,5 @@
+Current Baseline
+  - remove deprecated accessor_name and mutator_name methods (and t/27-mutator-old.t)
 
 3.0.17 Oct 4, 2007
   - Fix t/11 to cope with Class::Trigger no longer supporting multiple
@@ -7,10 +9,10 @@
   - Better error reporting from has_a setup failure
 
 3.0.15 Aug 19 2006
-  - Fix ignorage with mutator_name and accessor_name (Ask Bjørn Hansen)
+  - Fix ignorage with mutator_name and accessor_name (Ask BjÃ¸rn Hansen)
 
 3.0.14 Jan 03 2006
-  - Fix breakage with mutator_name (Ask Bjørn Hansen)
+  - Fix breakage with mutator_name (Ask BjÃ¸rn Hansen)
 
 3.0.13 Dec 15 2005
   - Use DBI's last_insert_id() where available (David Steinbrunner)

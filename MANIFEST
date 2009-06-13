@@ -44,7 +44,6 @@ t/23-cascade.t
 t/24-meta_info.t
 t/25-closures_in_meta.t
 t/26-mutator.t
-t/27-mutator-old.t
 t/97-pod.t
 t/98-failure.t
 t/99-misc.t
