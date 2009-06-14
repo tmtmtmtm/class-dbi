@@ -1,13 +1,11 @@
 Changes
 lib/Class/DBI.pm
-lib/Class/DBI/Attribute.pm
 lib/Class/DBI/Cascade/Delete.pm
 lib/Class/DBI/Cascade/Fail.pm
 lib/Class/DBI/Cascade/None.pm
 lib/Class/DBI/Column.pm
 lib/Class/DBI/ColumnGrouper.pm
 lib/Class/DBI/Iterator.pm
-lib/Class/DBI/Query.pm
 lib/Class/DBI/Relationship.pm
 lib/Class/DBI/Relationship/HasA.pm
 lib/Class/DBI/Relationship/HasMany.pm
@@ -24,7 +22,6 @@ t/01-columns.t
 t/02-Film.t
 t/03-subclassing.t
 t/04-lazy.t
-t/05-Query.t
 t/06-hasa.t
 t/08-inheritcols.t
 t/09-has_many.t

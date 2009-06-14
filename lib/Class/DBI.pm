@@ -15,7 +15,6 @@ use warnings;
 use base "Class::DBI::__::Base";
 
 use Class::DBI::ColumnGrouper;
-use Class::DBI::Query;
 use Carp ();
 use List::Util;
 use Clone ();

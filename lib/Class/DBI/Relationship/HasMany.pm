@@ -131,32 +131,21 @@ sub _hm_run_search {
 	my ($class, $accessor) = ($rel->class, $rel->accessor);
 	return sub {
 		my ($self, @search_args) = @_;
+    $class->_croak("search() on has_many cannot be called as class method")
+      unless ref $self;
+
 		@search_args = %{ $search_args[0] } if ref $search_args[0] eq "HASH";
 		my $meta = $class->meta_info($rel->name => $accessor);
 		my ($f_class, $f_key, $args) =
 			($meta->foreign_class, $meta->args->{foreign_key}, $meta->args);
-		if (ref $self) {    # For $artist->cds
-			unshift @search_args, %{ $args->{constraint} }
-				if defined($args->{constraint}) && ref $args->{constraint} eq 'HASH';
-			unshift @search_args, ($f_key => $self->id);
-			push @search_args, { order_by => $args->{order_by} }
-				if defined $args->{order_by};
-			return $f_class->search(@search_args);
-		} else {            # For Artist->cds
-			    # Cross-table join as class method
-			    # This stuff is highly experimental and will probably change beyond
-			    # recognition. Use at your own risk...
-			my %kv = @search_args;
-			my $query = Class::DBI::Query->new({ owner => $f_class });
-			$query->kings($class, $f_class);
-			$query->add_restriction(sprintf "%s.%s = %s.%s",
-				$f_class->table_alias, $f_key, $class->table_alias,
-				$class->primary_column);
-			$query->add_restriction("$_ = ?") for keys %kv;
-			my $sth = $query->run(values %kv);
-			return $f_class->sth_to_objects($sth);
-		}
-	};
+
+    unshift @search_args, %{ $args->{constraint} }
+      if defined($args->{constraint}) && ref $args->{constraint} eq 'HASH';
+    unshift @search_args, ($f_key => $self->id);
+    push @search_args, { order_by => $args->{order_by} }
+      if defined $args->{order_by};
+    return $f_class->search(@search_args);
+  };
 }
 
 1;
