@@ -1168,19 +1168,16 @@ Class::DBI - Simple Database Abstraction
 =head1 INTRODUCTION
 
 Class::DBI provides a convenient abstraction layer to a database.
+Its goal is to avoid making you have to write lots of boilerplate
+code for the sort of simple SQL queries that are commonplace in
+most database interactions. It does B<not> attempt to abstract away
+anything beyond the most basic and repetitive queries, but assumes
+you will want to use SQL directly for more complex tasks, and so
+gets out of the way to let you do that (as well as providing some
+assistance if you want it).
 
-It not only provides a simple database to object mapping layer, but can
-be used to implement several higher order database functions (triggers,
-referential integrity, cascading delete etc.), at the application level,
-rather than at the database.
-
-This is particularly useful when using a database which doesn't support
-these (such as MySQL), or when you would like your code to be portable
-across multiple databases which might implement these things in different
-ways.
-
-In short, Class::DBI aims to make it simple to introduce 'best
-practice' when dealing with data stored in a relational database.
+If you hate SQL or want to avoid writing it, then you probably want
+to be using something like DBIx::Class instead of Class::DBI.
 
 =head2 How to set it up
 
@@ -2476,17 +2473,6 @@ write (with MySQL):
 If you also need to access the 'cds' value returned from this query,
 the best approach is to declare 'cds' to be a TEMP column. (See
 L<"Non-Persistent Fields"> below).
-
-=head2 Class::DBI::AbstractSearch
-
-  my @music = Music::CD->search_where(
-    artist => [ 'Ozzy', 'Kelly' ],
-    status => { '!=', 'outdated' },
-  );
-
-The L<Class::DBI::AbstractSearch> module, available from CPAN, is a
-plugin for Class::DBI that allows you to write arbitrarily complex
-searches using perl data structures, rather than SQL.
 
 =head2 Single Value SELECTs
 
